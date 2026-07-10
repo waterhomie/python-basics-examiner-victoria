@@ -1,0 +1,7 @@
+﻿
+__pycache__/
+
+*.pyc
+
+broken_record.json
+

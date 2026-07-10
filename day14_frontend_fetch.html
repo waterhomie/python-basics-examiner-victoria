@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Examiner Victoria Fetch Demo</title>
+</head>
+<body>
+    <h1>Examiner Victoria Fetch Demo</h1>
+
+    <p><strong>Question:</strong></p>
+    <p id="questionText">Describe a city you want to visit.</p>
+
+    <p><strong>Your Answer:</strong></p>
+    <textarea id="answerInput" rows="6" cols="80">I want to visit Paris because it has beautiful architecture.</textarea>
+
+    <br /><br />
+    <button onclick="submitAnswer()">Submit Answer</button>
+
+    <h2>API Response</h2>
+    <pre id="resultBox">No response yet.</pre>
+
+    <script>
+        async function submitAnswer() {
+            const questionText = document.getElementById("questionText").innerText;
+            const userAnswer = document.getElementById("answerInput").value;
+
+            const requestBody = {
+                session_id: "practice_001",
+                question: questionText,
+                user_answer: userAnswer,
+                target_score: 7.0
+            };
+
+            const response = await fetch("http://127.0.0.1:8000/api/answer", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            const responseBody = await response.json();
+
+            document.getElementById("resultBox").innerText = JSON.stringify(responseBody, null, 2);
+        }
+    </script>
+</body>
+</html>

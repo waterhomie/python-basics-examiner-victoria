@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Examiner Victoria Validation Demo</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            max-width: 1000px;
+        }
+
+        textarea {
+            width: 100%;
+            max-width: 900px;
+            font-size: 16px;
+            padding: 10px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .box {
+            max-width: 900px;
+            padding: 16px;
+            border: 1px solid #cccccc;
+            border-radius: 8px;
+            margin-top: 12px;
+            white-space: pre-wrap;
+        }
+
+        .idle {
+            background-color: #f5f5f5;
+        }
+
+        .loading {
+            background-color: #fff7e6;
+        }
+
+        .success {
+            background-color: #eaf7ea;
+        }
+
+        .error {
+            background-color: #fdeaea;
+        }
+
+        .hint {
+            color: #666666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Examiner Victoria Validation Demo</h1>
+
+    <p><strong>Question:</strong></p>
+    <p id="questionText">Describe a city you want to visit.</p>
+
+    <p><strong>Your Answer:</strong></p>
+    <textarea id="answerInput" rows="6">I want to visit Paris because it has beautiful architecture.</textarea>
+
+    <p class="hint" id="answerHint">Minimum answer length: 10 characters.</p>
+
+    <br />
+    <button id="submitButton" onclick="submitAnswer()">Submit Answer</button>
+
+    <h2>Page State</h2>
+    <div id="stateBox" class="box idle">Idle: waiting for user input.</div>
+
+    <h2>API Response</h2>
+    <pre id="resultBox" class="box idle">No response yet.</pre>
+
+    <script>
+        const minimumAnswerLength = 10;
+
+        function setState(message, stateName) {
+            const stateBox = document.getElementById("stateBox");
+            const resultBox = document.getElementById("resultBox");
+
+            stateBox.innerText = message;
+
+            stateBox.className = "box " + stateName;
+            resultBox.className = "box " + stateName;
+        }
+
+        function showResult(data) {
+            const resultBox = document.getElementById("resultBox");
+            resultBox.innerText = JSON.stringify(data, null, 2);
+        }
+
+        function validateAnswer(userAnswer) {
+            if (!userAnswer) {
+                return {
+                    valid: false,
+                    message: "Please enter your answer first."
+                };
+            }
+
+            if (userAnswer.length < minimumAnswerLength) {
+                return {
+                    valid: false,
+                    message: "Your answer is too short. Please add more details."
+                };
+            }
+
+            return {
+                valid: true,
+                message: "Answer is ready to submit."
+            };
+        }
+
+        async function submitAnswer() {
+            const questionText = document.getElementById("questionText").innerText;
+            const answerInput = document.getElementById("answerInput");
+            const submitButton = document.getElementById("submitButton");
+            const resultBox = document.getElementById("resultBox");
+
+            const userAnswer = answerInput.value.trim();
+
+            const validationResult = validateAnswer(userAnswer);
+
+            if (!validationResult.valid) {
+                setState("Error: " + validationResult.message, "error");
+                showResult({
+                    source: "frontend_validation",
+                    message: validationResult.message
+                });
+                return;
+            }
+
+            const requestBody = {
+                session_id: "practice_001",
+                question: questionText,
+                user_answer: userAnswer,
+                target_score: 7.0
+            };
+
+            try {
+                submitButton.disabled = true;
+                setState("Loading: submitting answer to backend API...", "loading");
+                resultBox.innerText = "Waiting for backend response...";
+
+                const response = await fetch("http://127.0.0.1:8000/api/answer", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const responseBody = await response.json();
+
+                if (responseBody.status === "ok") {
+                    setState("Success: feedback generated successfully.", "success");
+                } else {
+                    setState("Error: the answer needs user action. Please revise your answer.", "error");
+                }
+
+                showResult(responseBody);
+            } catch (error) {
+                setState("Error: failed to connect to the backend API.", "error");
+                showResult({
+                    source: "frontend_error",
+                    error_message: String(error)
+                });
+            } finally {
+                submitButton.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

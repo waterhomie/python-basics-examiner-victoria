@@ -1,0 +1,30 @@
+import json
+
+records = [
+    {
+        "date": "2026-07-04",
+        "part": "Part 1",
+        "topic": "Hometown",
+        "question": "Where is your hometown?",
+        "user_answer": "My hometown is a small city in Shandong.",
+        "feedback": "The answer is clear, but it can include more specific details.",
+        "score": 6.0
+    },
+    {
+        "date": "2026-07-04",
+        "part": "Part 2",
+        "topic": "City",
+        "question": "Describe a city you want to visit.",
+        "user_answer": "I want to visit Paris because it has beautiful architecture.",
+        "feedback": "Your answer is clear, but you can add one specific example.",
+        "score": 6.5
+    }
+]
+
+with open("practice_records.json", "r", encoding="utf-8") as file:
+    loaded_records = json.load(file)
+
+for index, record in enumerate(loaded_records):
+    print(f"Record {index + 1}:")
+    print(record["question"])
+    print(record["score"])

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Examiner Victoria Feedback Card Demo</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            max-width: 1000px;
+        }
+
+        textarea {
+            width: 100%;
+            font-size: 16px;
+            padding: 12px;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .box {
+            margin-top: 16px;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        .idle {
+            background: #f5f5f5;
+        }
+
+        .loading {
+            background: #fff8e1;
+        }
+
+        .success {
+            background: #e8f5e9;
+        }
+
+        .error {
+            background: #fdecea;
+        }
+
+        .feedback-card {
+            margin-top: 16px;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            background: #f5f5f5;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #eeeeee;
+            font-size: 14px;
+        }
+
+        .score {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .label {
+            margin-top: 20px;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Examiner Victoria Feedback Card Demo</h1>
+
+    <p><strong>Question:</strong></p>
+    <p id="questionText">Describe a city you want to visit.</p>
+
+    <p><strong>Your Answer:</strong></p>
+    <textarea id="answerInput" rows="6">I want to visit Paris because it has beautiful architecture.</textarea>
+
+    <p id="hintText">Minimum answer length: 10 characters.</p>
+
+    <button id="submitButton" onclick="submitAnswer()">Submit Answer</button>
+
+    <h2>Page State</h2>
+    <div id="stateBox" class="box idle">Idle: waiting for user input.</div>
+
+    <h2>Feedback Card</h2>
+    <div id="feedbackCard" class="feedback-card">
+        No feedback yet.
+    </div>
+
+    <h2>Raw API Response</h2>
+    <pre id="rawResponseBox" class="box idle">No response yet.</pre>
+
+    <script>
+        const minimumAnswerLength = 10;
+        const apiUrl = "http://127.0.0.1:8000/api/answer";
+
+        function setState(stateType, message) {
+            const stateBox = document.getElementById("stateBox");
+            stateBox.className = "box " + stateType;
+            stateBox.innerText = message;
+        }
+
+        function getScoreText(score) {
+            if (score === null || score === undefined) {
+                return "No score";
+            }
+
+            return score;
+        }
+
+        function getNextStepText(nextAction) {
+            if (nextAction === "show_feedback") {
+                return "Review the feedback and improve your answer.";
+            }
+
+            if (nextAction === "ask_user_to_expand") {
+                return "Add more details and submit again.";
+            }
+
+            return "No next step.";
+        }
+
+        function renderSuccessCard(responseBody) {
+            const feedbackCard = document.getElementById("feedbackCard");
+
+            const scoreText = getScoreText(responseBody.score);
+            const feedbackText = responseBody.feedback || "No feedback.";
+            const nextStepText = getNextStepText(responseBody.next_action);
+
+            feedbackCard.className = "feedback-card success";
+            feedbackCard.innerHTML = `
+                <div class="card-header">
+                    <span class="badge">Status: ${responseBody.status}</span>
+                    <div class="score">${scoreText}</div>
+                </div>
+
+                <div class="label">Feedback</div>
+                <p>${feedbackText}</p>
+
+                <div class="label">Next Step</div>
+                <p>${nextStepText}</p>
+            `;
+        }
+
+        function renderErrorCard(responseBody) {
+            const feedbackCard = document.getElementById("feedbackCard");
+
+            const messageText = responseBody.message || "Something went wrong.";
+            const nextStepText = getNextStepText(responseBody.next_action);
+
+            feedbackCard.className = "feedback-card error";
+            feedbackCard.innerHTML = `
+                <div class="card-header">
+                    <span class="badge">Status: ${responseBody.status || "error"}</span>
+                    <div class="score">--</div>
+                </div>
+
+                <div class="label">Message</div>
+                <p>${messageText}</p>
+
+                <div class="label">Next Step</div>
+                <p>${nextStepText}</p>
+            `;
+        }
+
+        function renderLoadingCard() {
+            const feedbackCard = document.getElementById("feedbackCard");
+            feedbackCard.className = "feedback-card loading";
+            feedbackCard.innerText = "Waiting for backend feedback...";
+        }
+
+        async function submitAnswer() {
+            const questionText = document.getElementById("questionText").innerText;
+            const answerInput = document.getElementById("answerInput");
+            const userAnswer = answerInput.value.trim();
+
+            const submitButton = document.getElementById("submitButton");
+            const rawResponseBox = document.getElementById("rawResponseBox");
+
+            if (!userAnswer) {
+                const responseBody = {
+                    source: "frontend_validation",
+                    status: "empty",
+                    message: "Please enter your answer first.",
+                    next_action: "ask_user_to_expand"
+                };
+
+                setState("error", "Error: Please enter your answer first.");
+                renderErrorCard(responseBody);
+                rawResponseBox.className = "box error";
+                rawResponseBox.innerText = JSON.stringify(responseBody, null, 2);
+                return;
+            }
+
+            if (userAnswer.length < minimumAnswerLength) {
+                const responseBody = {
+                    source: "frontend_validation",
+                    status: "too_short",
+                    message: "Your answer is too short. Please add more details.",
+                    next_action: "ask_user_to_expand"
+                };
+
+                setState("error", "Error: Your answer is too short. Please add more details.");
+                renderErrorCard(responseBody);
+                rawResponseBox.className = "box error";
+                rawResponseBox.innerText = JSON.stringify(responseBody, null, 2);
+                return;
+            }
+
+            const requestBody = {
+                session_id: "practice_001",
+                question: questionText,
+                user_answer: userAnswer,
+                target_score: 7.0
+            };
+
+            submitButton.disabled = true;
+            setState("loading", "Loading: sending answer to backend API...");
+            renderLoadingCard();
+            rawResponseBox.className = "box loading";
+            rawResponseBox.innerText = "Waiting for response...";
+
+            try {
+                await new Promise(resolve => setTimeout(resolve, 800));
+
+                const response = await fetch(apiUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const responseBody = await response.json();
+
+                rawResponseBox.innerText = JSON.stringify(responseBody, null, 2);
+
+                if (responseBody.status === "ok") {
+                    setState("success", "Success: feedback generated successfully.");
+                    renderSuccessCard(responseBody);
+                    rawResponseBox.className = "box success";
+                } else {
+                    setState("error", "Error: the answer needs user action. Please revise your answer.");
+                    renderErrorCard(responseBody);
+                    rawResponseBox.className = "box error";
+                }
+            } catch (error) {
+                const responseBody = {
+                    source: "network_error",
+                    status: "error",
+                    message: "Failed to connect to backend API. Check whether Uvicorn is running.",
+                    next_action: "check_backend_server",
+                    error_message: String(error)
+                };
+
+                setState("error", "Error: failed to connect to backend API.");
+                renderErrorCard(responseBody);
+                rawResponseBox.className = "box error";
+                rawResponseBox.innerText = JSON.stringify(responseBody, null, 2);
+            } finally {
+                submitButton.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
