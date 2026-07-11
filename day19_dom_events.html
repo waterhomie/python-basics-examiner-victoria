@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <title>Examiner Victoria DOM Events Demo</title>
+    <button id="sampleAnswerButton">Use Sample Answer</button>
 
     <style>
         body {
@@ -74,6 +75,8 @@
         const clearButton = document.getElementById("clearButton");
         const changeQuestionButton =
             document.getElementById("changeQuestionButton");
+        const sampleAnswerButton =
+            document.getElementById("sampleAnswerButton");
         const resultCard = document.getElementById("resultCard");
 
         function updateCharacterCount() {
@@ -117,6 +120,16 @@
             clearAnswer();
         }
 
+        function useSampleAnswer() {
+            answerInput.value =
+                "My English teacher helped me improve my speaking skills.";
+
+            updateCharacterCount();
+
+            resultCard.className = "result-card idle";
+            resultCard.innerText = "Sample answer inserted.";
+         }
+
         answerInput.addEventListener(
             "input",
             updateCharacterCount
@@ -135,6 +148,11 @@
         changeQuestionButton.addEventListener(
             "click",
             changeQuestion
+        );
+
+        sampleAnswerButton.addEventListener(
+             "click",
+        useSampleAnswer
         );
     </script>
 </body>
