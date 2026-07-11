@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Examiner Victoria DOM Events Demo</title>
+
+    <style>
+        body {
+            max-width: 800px;
+            margin: 40px auto;
+            font-family: Arial, sans-serif;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+        }
+
+        button {
+            margin-top: 12px;
+            margin-right: 8px;
+            padding: 10px 18px;
+            cursor: pointer;
+        }
+
+        .result-card {
+            margin-top: 24px;
+            padding: 16px;
+            border: 1px solid #cccccc;
+            border-radius: 16px;
+        }
+
+        .idle {
+            background-color: #f5f5f5;
+        }
+
+        .success {
+            background-color: #eef8ee;
+        }
+
+        .error {
+            background-color: #fff0ee;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Examiner Victoria DOM Events Demo</h1>
+
+    <p><strong>Question:</strong></p>
+    <p id="questionText">Describe a person who helped you.</p>
+
+    <p><strong>Your Answer:</strong></p>
+    <textarea id="answerInput"></textarea>
+
+    <p id="characterCount">Characters: 0</p>
+
+    <button id="checkButton">Check Answer</button>
+    <button id="clearButton">Clear Answer</button>
+    <button id="changeQuestionButton">Change Question</button>
+
+    <div id="resultCard" class="result-card idle">
+        No result yet.
+    </div>
+
+    <script>
+        const minimumAnswerLength = 10;
+
+        const questionText = document.getElementById("questionText");
+        const answerInput = document.getElementById("answerInput");
+        const characterCount = document.getElementById("characterCount");
+        const checkButton = document.getElementById("checkButton");
+        const clearButton = document.getElementById("clearButton");
+        const changeQuestionButton =
+            document.getElementById("changeQuestionButton");
+        const resultCard = document.getElementById("resultCard");
+
+        function updateCharacterCount() {
+            characterCount.innerText =
+                "Characters: " + answerInput.value.length;
+        }
+
+        function checkAnswer() {
+            const userAnswer = answerInput.value.trim();
+
+            if (!userAnswer) {
+                resultCard.className = "result-card error";
+                resultCard.innerText =
+                    "Please enter your answer first.";
+                return;
+            }
+
+            if (userAnswer.length < minimumAnswerLength) {
+                resultCard.className = "result-card error";
+                resultCard.innerText =
+                    "Your answer is too short.";
+                return;
+            }
+
+            resultCard.className = "result-card success";
+            resultCard.innerText =
+                "Your answer is ready to submit.";
+        }
+
+        function clearAnswer() {
+            answerInput.value = "";
+            characterCount.innerText = "Characters: 0";
+            resultCard.className = "result-card idle";
+            resultCard.innerText = "No result yet.";
+        }
+
+        function changeQuestion() {
+            questionText.innerText =
+                "Describe a city you want to visit.";
+
+            clearAnswer();
+        }
+
+        answerInput.addEventListener(
+            "input",
+            updateCharacterCount
+        );
+
+        checkButton.addEventListener(
+            "click",
+            checkAnswer
+        );
+
+        clearButton.addEventListener(
+            "click",
+            clearAnswer
+        );
+
+        changeQuestionButton.addEventListener(
+            "click",
+            changeQuestion
+        );
+    </script>
+</body>
+</html>
